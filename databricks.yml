@@ -1,0 +1,26 @@
+# This is a Declarative Automation Bundle definition for AirLake-1.
+# The Databricks extension requires databricks.yml configuration file.
+# See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
+
+bundle:
+  name: AirLake-2026
+
+variables:
+  catalog:
+    default: workspace
+  bronze_schema:
+    default: bronze
+  silver_schema:
+    default: silver
+  raw_volume:
+    default: /Volumes/workspace/raw_source_schema/raw_source_volume/raw_data
+  bronze_volume:
+    default: /Volumes/workspace/bronze/bronze_volume
+
+include:
+  - resources/*.yml
+
+targets:
+  dev:
+    mode: development
+    default: true
