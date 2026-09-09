@@ -43,9 +43,15 @@ dimensions = {
 
 dbutils.widgets.dropdown("dimension", "airports", list(dimensions.keys()))
 dbutils.widgets.text("backdated_refresh", "")
+dbutils.widgets.text("catalog", "workspace")
+dbutils.widgets.text("source_schema", "silver")
+dbutils.widgets.text("target_schema", "gold")
 
 dimension = dbutils.widgets.get("dimension")
 backdated_refresh = dbutils.widgets.get("backdated_refresh")
+catalog = dbutils.widgets.get("catalog")
+source_schema = dbutils.widgets.get("source_schema")
+target_schema = dbutils.widgets.get("target_schema")
 
 if dimension not in dimensions:
     raise ValueError(
@@ -60,9 +66,6 @@ target_object = config["target_object"]
 surrogate_key = config["surrogate_key"]
 
 cdc_col = "modified_date"
-source_schema = "silver"
-target_schema = "gold"
-catalog = "workspace"
 
 # COMMAND ----------
 
@@ -79,9 +82,9 @@ catalog = "workspace"
 # no back dated refresh
 if len(backdated_refresh) == 0:
     # if table exists in the destination
-    if spark.catalog.tableExists(f"workspace.{target_schema}.{target_object}"):
+    if spark.catalog.tableExists(f"{catalog}.{target_schema}.{target_object}"):
         last_load = spark.sql(
-            f"select max({cdc_col}) from workspace.{target_schema}.{target_object}"
+            f"select max({cdc_col}) from {catalog}.{target_schema}.{target_object}"
         ).collect()[0][0]
     else:
         last_load = "1900-01-01"
@@ -95,7 +98,7 @@ print(last_load)
 # COMMAND ----------
 
 df_src = spark.sql(
-    f"select * from {source_schema}.{source_object} where {cdc_col} >= '{last_load}'"
+    f"select * from {catalog}.{source_schema}.{source_object} where {cdc_col} >= '{last_load}'"
 )
 # df_src.display()
 
@@ -106,7 +109,7 @@ df_src = spark.sql(
 
 # COMMAND ----------
 
-if spark.catalog.tableExists(f"workspace.{target_schema}.{target_object}"):
+if spark.catalog.tableExists(f"{catalog}.{target_schema}.{target_object}"):
 
     # Key col string
     key_col_string_incremental = ", ".join(key_col_list)
@@ -185,7 +188,7 @@ df_old_enriched = df_old.withColumn("update_date", current_timestamp())
 
 # COMMAND ----------
 
-if spark.catalog.tableExists(f"workspace.{target_schema}.{target_object}"):
+if spark.catalog.tableExists(f"{catalog}.{target_schema}.{target_object}"):
     max_surrogate_key = spark.sql(
         f"select max({surrogate_key}) from {catalog}.{target_schema}.{target_object}"
     ).collect()[0][0]

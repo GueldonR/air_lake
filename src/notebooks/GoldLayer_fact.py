@@ -19,24 +19,28 @@ from delta.tables import DeltaTable
 # COMMAND ----------
 
 # Catalog
-catalog = "workspace"
+dbutils.widgets.text("catalog", "workspace")
+dbutils.widgets.text("source_schema", "silver")
+dbutils.widgets.text("target_schema", "gold")
+
+catalog = dbutils.widgets.get("catalog")
 
 # Fact merge key
 fact_merge_key = "booking_id"
 
-#CDC Columns
+# CDC Columns
 cdc_col = "modified_date"
 
-#Source Schema
-source_schema = "silver"
+# Source Schema
+source_schema = dbutils.widgets.get("source_schema")
 
 # Target Schema
-target_schema = "gold"
+target_schema = dbutils.widgets.get("target_schema")
 
-#Target object
+# Target object
 target_object = "fact_table"
 
-#Source fact table
+# Source fact table
 fact_table = f"{catalog}.{source_schema}.silver_bookings"
 
 # Fact columns to select from source (measures and keys)
@@ -48,24 +52,22 @@ fact_columns = ["booking_id", "amount", "booking_date", "modified_date"]
 dim_configs = [
     {
         "table": f"{catalog}.{target_schema}.dim_passengers",
-        "alias": "dim_passengers", 
-        "join_keys": [("passenger_id", "passenger_id")], # fact col, dim col
-        "surrogate_key": "dim_passengers_key"
+        "alias": "dim_passengers",
+        "join_keys": [("passenger_id", "passenger_id")],  # fact col, dim col
+        "surrogate_key": "dim_passengers_key",
     },
-
     {
         "table": f"{catalog}.{target_schema}.dim_flights",
-        "alias": "dim_flights", 
-        "join_keys": [("flight_id", "flight_id")], # fact col, dim col
-        "surrogate_key": "dim_flight_key"
+        "alias": "dim_flights",
+        "join_keys": [("flight_id", "flight_id")],  # fact col, dim col
+        "surrogate_key": "dim_flight_key",
     },
-
     {
         "table": f"{catalog}.{target_schema}.dim_airports",
         "alias": "dim_airports",
-        "join_keys": [("airport_id", "airport_id")], # fact col, dim col
-        "surrogate_key": "dim_airports_key"
-    }
+        "join_keys": [("airport_id", "airport_id")],  # fact col, dim col
+        "surrogate_key": "dim_airports_key",
+    },
 ]
 
 # COMMAND ----------
@@ -75,13 +77,16 @@ dim_configs = [
 
 # COMMAND ----------
 
-def generate_fact_query_incremental(fact_table, dimension, fact_columns, cdc_column, processing_date):
+
+def generate_fact_query_incremental(
+    fact_table, dimension, fact_columns, cdc_column, processing_date
+):
     fact_alias = "f"
 
     # Column select
     select_cols = [f"{fact_alias}.{col}" for col in fact_columns]
 
-    #Build joins
+    # Build joins
 
     join_clauses = []
     for dim in dim_configs:
@@ -90,18 +95,19 @@ def generate_fact_query_incremental(fact_table, dimension, fact_columns, cdc_col
         surrogate_key = f"{alias}.{dim['surrogate_key']}"
         select_cols.append(surrogate_key)
 
-        # join clause 
+        # join clause
         on_clause = [f"{fact_alias}.{fk} = {alias}.{dk}" for fk, dk in dim["join_keys"]]
-        join_clause = f"left join {table_full_name} {alias} on " + " and ".join(on_clause)
+        join_clause = f"left join {table_full_name} {alias} on " + " and ".join(
+            on_clause
+        )
         join_clauses.append(join_clause)
 
-    #Select and join
+    # Select and join
     select_clause = ",\n   ".join(select_cols)
     joins = "\n  ".join(join_clauses)
 
     # where clause
     where_clause = f"{fact_alias}.{cdc_column} >= DATE('{processing_date}')"
-
 
     # Final query
 
@@ -116,6 +122,7 @@ def generate_fact_query_incremental(fact_table, dimension, fact_columns, cdc_col
 
     return query
 
+
 # COMMAND ----------
 
 # MAGIC %md
@@ -125,7 +132,9 @@ def generate_fact_query_incremental(fact_table, dimension, fact_columns, cdc_col
 
 # Get last load date for incremental processing
 if spark.catalog.tableExists(f"{catalog}.{target_schema}.{target_object}"):
-    last_load = spark.sql(f"select max({cdc_col}) from {catalog}.{target_schema}.{target_object}").collect()[0][0]
+    last_load = spark.sql(
+        f"select max({cdc_col}) from {catalog}.{target_schema}.{target_object}"
+    ).collect()[0][0]
 else:
     last_load = "1900-01-01"  # Default starting date for initial load
 
@@ -138,12 +147,18 @@ print(f"Last load date: {last_load}")
 
 # COMMAND ----------
 
-query = generate_fact_query_incremental(fact_table=fact_table, dimension=dim_configs, fact_columns=fact_columns, cdc_column=cdc_col, processing_date = last_load)
+query = generate_fact_query_incremental(
+    fact_table=fact_table,
+    dimension=dim_configs,
+    fact_columns=fact_columns,
+    cdc_column=cdc_col,
+    processing_date=last_load,
+)
 
 # COMMAND ----------
 
 df_fact = spark.sql(query)
-#df_fact.limit(10).display()
+# df_fact.limit(10).display()
 
 # COMMAND ----------
 
@@ -153,7 +168,7 @@ df_fact = spark.sql(query)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Prepping surrogate keys and 
+# MAGIC ### Prepping surrogate keys and
 
 # COMMAND ----------
 
@@ -173,11 +188,12 @@ print(f"Fact table merge key: {fact_merge_key}")
 
 if spark.catalog.tableExists(f"{catalog}.{target_schema}.{target_object}"):
     dlt_obj = DeltaTable.forName(spark, f"{catalog}.{target_schema}.{target_object}")
-    dlt_obj.alias("trg").merge(df_fact.alias("src"), f"trg.{fact_merge_key} = src.{fact_merge_key}")\
-        .whenMatchedUpdateAll(condition = f"src.{cdc_col} >= trg.{cdc_col}")\
-        .whenNotMatchedInsertAll()\
-        .execute()
+    dlt_obj.alias("trg").merge(
+        df_fact.alias("src"), f"trg.{fact_merge_key} = src.{fact_merge_key}"
+    ).whenMatchedUpdateAll(
+        condition=f"src.{cdc_col} >= trg.{cdc_col}"
+    ).whenNotMatchedInsertAll().execute()
 else:
-    df_fact.write.format("delta")\
-        .mode("append")\
-        .saveAsTable(f"{catalog}.{target_schema}.{target_object}")
+    df_fact.write.format("delta").mode("append").saveAsTable(
+        f"{catalog}.{target_schema}.{target_object}"
+    )

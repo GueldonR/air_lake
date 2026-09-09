@@ -1,0 +1,23 @@
+resources:
+  jobs:
+    setup:
+      name: AirLake-${bundle.target}-setup
+      max_concurrent_runs: 1
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "5"
+      tasks:
+        - task_key: setup
+          environment_key: Default
+          notebook_task:
+            notebook_path: ../src/notebooks/Initital.setup.py
+            source: WORKSPACE
+            base_parameters:
+              catalog: "${var.catalog}"
+              bronze_schema: "${var.bronze_schema}"
+              silver_schema: "${var.silver_schema}"
+              gold_schema: "${var.gold_schema}"
+              raw_source_schema: "${var.raw_source_schema}"
+              raw_source_volume: "${var.raw_source_volume}"
+              raw_volume: "${var.raw_volume}"

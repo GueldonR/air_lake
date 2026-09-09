@@ -9,10 +9,9 @@ from pyspark.sql.types import *
 @dp.temporary_view(name="transform_airports")
 def transform_airports():
     df = spark.readStream.format("delta").load(
-        "/Volumes/workspace/bronze/bronze_volume/airports/data"
+        f"{spark.conf.get('airlake.bronze_volume', '/Volumes/workspace/bronze/bronze_volume').rstrip('/')}/airports/data"
     )
-    df = df.drop("_rescued_data")\
-        .withColumn("modified_date", current_timestamp())
+    df = df.drop("_rescued_data").withColumn("modified_date", current_timestamp())
     return df
 
 

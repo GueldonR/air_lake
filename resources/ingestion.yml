@@ -31,3 +31,5 @@ resources:
                 source: WORKSPACE
                 base_parameters:
                   src: "{{input.src}}"
+                  raw_volume: "${var.raw_volume}"
+                  bronze_volume: "${var.bronze_volume}"

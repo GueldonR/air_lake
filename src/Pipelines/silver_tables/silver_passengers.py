@@ -7,14 +7,16 @@ from pyspark.sql.types import *
 passengers_rules = {
     "rule_1": "passenger_id IS NOT NULL",
 }
-@dp.temporary_view(
-  name="transform_passengers"
-)
+
+
+@dp.temporary_view(name="transform_passengers")
 @dp.expect_all_or_drop(passengers_rules)
 def transform_passengers():
-    df = spark.readStream.format("delta").load("/Volumes/workspace/bronze/bronze_volume/passenger/data")
-    df = df.drop("_rescued_data")\
-        .withColumn("modified_date", current_timestamp())
+    bronze_volume = spark.conf.get(
+        "airlake.bronze_volume", "/Volumes/workspace/bronze/bronze_volume"
+    ).rstrip("/")
+    df = spark.readStream.format("delta").load(f"{bronze_volume}/passenger/data")
+    df = df.drop("_rescued_data").withColumn("modified_date", current_timestamp())
     return df
 
 
@@ -26,6 +28,5 @@ dp.create_auto_cdc_flow(
     source="transform_passengers",
     keys=["passenger_id"],
     stored_as_scd_type=1,
-    sequence_by=col("modified_date")
-                        )
-
+    sequence_by=col("modified_date"),
+)

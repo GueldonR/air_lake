@@ -20,4 +20,19 @@ resources:
                 source: WORKSPACE
                 base_parameters:
                   dimension: "{{input}}"
+                  catalog: "${var.catalog}"
+                  source_schema: "${var.silver_schema}"
+                  target_schema: "${var.gold_schema}"
                   #backdated_refresh: ""
+
+        - task_key: gold_fact
+          depends_on:
+            - task_key: gold_dimensions
+          environment_key: Default
+          notebook_task:
+            notebook_path: ../src/notebooks/GoldLayer_fact.py
+            source: WORKSPACE
+            base_parameters:
+              catalog: "${var.catalog}"
+              source_schema: "${var.silver_schema}"
+              target_schema: "${var.gold_schema}"

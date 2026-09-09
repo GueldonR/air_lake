@@ -10,10 +10,20 @@
 # COMMAND ----------
 
 dbutils.widgets.text("src", defaultValue="")
+dbutils.widgets.text(
+    "raw_volume",
+    defaultValue="/Volumes/workspace/raw_source_schema/raw_source_volume/raw_data",
+)
+dbutils.widgets.text(
+    "bronze_volume",
+    defaultValue="/Volumes/workspace/bronze/bronze_volume",
+)
 
 # COMMAND ----------
 
 src_value = dbutils.widgets.get("src")
+raw_volume = dbutils.widgets.get("raw_volume").rstrip("/")
+bronze_volume = dbutils.widgets.get("bronze_volume").rstrip("/")
 
 print(src_value)
 
@@ -24,12 +34,10 @@ df = (
     .option("cloudFiles.format", "csv")
     .option(
         "cloudFiles.schemaLocation",
-        f"/Volumes/workspace/bronze/bronze_volume/{src_value}/checkpoint",
+        f"{bronze_volume}/{src_value}/checkpoint",
     )
     .option("cloudFiles.schemaEvolutionMode", "rescue")
-    .load(
-        f"/Volumes/workspace/raw_source_schema/raw_source_volume/raw_data/{src_value}/"
-    )
+    .load(f"{raw_volume}/{src_value}/")
 )
 
 print(df)
@@ -43,8 +51,8 @@ print(df)
 
 df.writeStream.format("delta").outputMode("append").trigger(once=True).option(
     "checkpointLocation",
-    f"/Volumes/workspace/bronze/bronze_volume/{src_value}/checkpoint",
-).option("path", f"/Volumes/workspace/bronze/bronze_volume/{src_value}/data").start()
+    f"{bronze_volume}/{src_value}/checkpoint",
+).option("path", f"{bronze_volume}/{src_value}/data").start()
 
 # COMMAND ----------
 

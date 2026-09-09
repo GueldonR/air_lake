@@ -12,6 +12,12 @@ variables:
     default: bronze
   silver_schema:
     default: silver
+  gold_schema:
+    default: gold
+  raw_source_schema:
+    default: raw_source_schema
+  raw_source_volume:
+    default: raw_source_volume
   raw_volume:
     default: /Volumes/workspace/raw_source_schema/raw_source_volume/raw_data
   bronze_volume:
