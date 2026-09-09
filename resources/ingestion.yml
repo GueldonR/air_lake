@@ -1,7 +1,7 @@
 resources:
   jobs:
     ingestion:
-      name: Ingestion-test-${bundle.target}
+      name: AirLake-${bundle.target}-ingestion-job
       max_concurrent_runs: 1
       performance_target: PERFORMANCE_OPTIMIZED
       queue:
@@ -17,14 +17,14 @@ resources:
             notebook_path: ../src/notebooks/SrcParameters.py
             source: WORKSPACE
 
-        - task_key: Incermental_ingestion
+        - task_key: Incremental_ingestion
           depends_on:
             - task_key: Parameters
           for_each_task:
             inputs: "{{tasks.Parameters.values.output_key}}"
             concurrency: 1
             task:
-              task_key: Incermental_ingestion_iteration
+              task_key: Incremental_ingestion_iteration
               environment_key: Default
               notebook_task:
                 notebook_path: ../src/notebooks/BronzeLayer.py

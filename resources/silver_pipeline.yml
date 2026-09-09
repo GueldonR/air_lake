@@ -1,7 +1,7 @@
 resources:
   pipelines:
     airlake_silver:
-      name: AirLake-${bundle.target}-silver
+      name: AirLake-${bundle.target}-silver-pipeline
       catalog: workspace
       schema: silver
       serverless: true
