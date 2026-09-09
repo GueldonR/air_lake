@@ -1,0 +1,23 @@
+resources:
+  jobs:
+    gold_dimensions:
+      name: AirLake-${bundle.target}-gold-dimensions
+      max_concurrent_runs: 1
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "5"
+      tasks:
+        - task_key: gold_dimensions
+          for_each_task:
+            inputs: '["airports", "flights", "passengers"]'
+            concurrency: 3
+            task:
+              task_key: gold_dimension
+              environment_key: Default
+              notebook_task:
+                notebook_path: ../src/notebooks/GoldLayer_dims.py
+                source: WORKSPACE
+                base_parameters:
+                  dimension: "{{input}}"
+                  #backdated_refresh: ""

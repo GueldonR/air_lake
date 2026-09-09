@@ -19,126 +19,50 @@ from pyspark.sql.types import *
 
 # COMMAND ----------
 
-# Default configuration builds the airport dimension. Run this notebook once per
-# dimension, changing the values in this configuration block for each source.
-key_col_list = ["airport_id"]
+# Dimension configuration
+dimensions = {
+    "airports": {
+        "source_object": "silver_airports",
+        "target_object": "dim_airports",
+        "key_columns": ["airport_id"],
+        "surrogate_key": "dim_airports_key",
+    },
+    "flights": {
+        "source_object": "silver_flights",
+        "target_object": "dim_flights",
+        "key_columns": ["flight_id"],
+        "surrogate_key": "dim_flight_key",
+    },
+    "passengers": {
+        "source_object": "silver_passengers",
+        "target_object": "dim_passengers",
+        "key_columns": ["passenger_id"],
+        "surrogate_key": "dim_passengers_key",
+    },
+}
 
-# CDC Columns
+dbutils.widgets.dropdown("dimension", "airports", list(dimensions.keys()))
+dbutils.widgets.text("backdated_refresh", "")
+
+dimension = dbutils.widgets.get("dimension")
+backdated_refresh = dbutils.widgets.get("backdated_refresh")
+
+if dimension not in dimensions:
+    raise ValueError(
+        f"Unsupported dimension '{dimension}'. "
+        f"Choose one of: {list(dimensions.keys())}"
+    )
+
+config = dimensions[dimension]
+key_col_list = config["key_columns"]
+source_object = config["source_object"]
+target_object = config["target_object"]
+surrogate_key = config["surrogate_key"]
+
 cdc_col = "modified_date"
-
-# Back-dated refresh
-backdated_refresh = ""
-
-# Source object
-source_object = "silver_airports"
-
-# Source Schema
 source_schema = "silver"
-
-# Target Schema
 target_schema = "gold"
-
-# Target object
-target_object = "dim_airports"
-
-# Surrogate Key
-surrogate_key = "dim_airports_key"
-
-# Catalog
 catalog = "workspace"
-
-# COMMAND ----------
-
-# MAGIC %skip
-# MAGIC # Key col list
-# MAGIC key_col  = "['flight_id']"
-# MAGIC key_col_list = eval(key_col)
-# MAGIC
-# MAGIC #CDC Columns
-# MAGIC cdc_col = "modified_date"
-# MAGIC
-# MAGIC #Back-dated refresh
-# MAGIC backdated_refresh = ""
-# MAGIC
-# MAGIC #Source object
-# MAGIC source_object = "silver_flights"
-# MAGIC
-# MAGIC #Source Schema
-# MAGIC source_schema = "silver"
-# MAGIC
-# MAGIC # Target Schema
-# MAGIC target_schema = "gold"
-# MAGIC
-# MAGIC #Target object
-# MAGIC target_object = "dim_flights"
-# MAGIC
-# MAGIC #Surrogate Key
-# MAGIC surrogate_key = "dim_flight_key"
-# MAGIC
-# MAGIC # Catalog
-# MAGIC catalog = "workspace"
-
-# COMMAND ----------
-
-# MAGIC %skip
-# MAGIC # Key col list
-# MAGIC key_col  = "['passenger_id']"
-# MAGIC key_col_list = eval(key_col)
-# MAGIC
-# MAGIC #CDC Columns
-# MAGIC cdc_col = "modified_date"
-# MAGIC
-# MAGIC #Back-dated refresh
-# MAGIC backdated_refresh = ""
-# MAGIC
-# MAGIC #Source object
-# MAGIC source_object = "silver_passengers"
-# MAGIC
-# MAGIC #Source Schema
-# MAGIC source_schema = "silver"
-# MAGIC
-# MAGIC # Target Schema
-# MAGIC target_schema = "gold"
-# MAGIC
-# MAGIC #Target object
-# MAGIC target_object = "dim_passengers"
-# MAGIC
-# MAGIC #Surrogate Key
-# MAGIC surrogate_key = "dim_passengers_key"
-# MAGIC
-# MAGIC # Catalog
-# MAGIC catalog = "workspace"
-
-# COMMAND ----------
-
-# MAGIC %skip
-# MAGIC # Key col list
-# MAGIC key_col  = "['airport_id']"
-# MAGIC key_col_list = eval(key_col)
-# MAGIC
-# MAGIC #CDC Columns
-# MAGIC cdc_col = "modified_date"
-# MAGIC
-# MAGIC #Back-dated refresh
-# MAGIC backdated_refresh = ""
-# MAGIC
-# MAGIC #Source object
-# MAGIC source_object = "silver_airports"
-# MAGIC
-# MAGIC #Source Schema
-# MAGIC source_schema = "silver"
-# MAGIC
-# MAGIC # Target Schema
-# MAGIC target_schema = "gold"
-# MAGIC
-# MAGIC #Target object
-# MAGIC target_object = "dim_airports"
-# MAGIC
-# MAGIC #Surrogate Key
-# MAGIC surrogate_key = "dim_airports_key"
-# MAGIC
-# MAGIC # Catalog
-# MAGIC catalog = "workspace"
 
 # COMMAND ----------
 
