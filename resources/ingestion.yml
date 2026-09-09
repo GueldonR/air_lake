@@ -1,0 +1,33 @@
+resources:
+  jobs:
+    ingestion:
+      name: Ingestion-test-${bundle.target}
+      max_concurrent_runs: 1
+      performance_target: PERFORMANCE_OPTIMIZED
+      queue:
+        enabled: true
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "5"
+      tasks:
+        - task_key: Parameters
+          environment_key: Default
+          notebook_task:
+            notebook_path: ../src/notebooks/SrcParameters.py
+            source: WORKSPACE
+
+        - task_key: Incermental_ingestion
+          depends_on:
+            - task_key: Parameters
+          for_each_task:
+            inputs: "{{tasks.Parameters.values.output_key}}"
+            concurrency: 1
+            task:
+              task_key: Incermental_ingestion_iteration
+              environment_key: Default
+              notebook_task:
+                notebook_path: ../src/notebooks/BronzeLayer.py
+                source: WORKSPACE
+                base_parameters:
+                  src: "{{input.src}}"

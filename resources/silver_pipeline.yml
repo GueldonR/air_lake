@@ -1,0 +1,19 @@
+resources:
+  pipelines:
+    airlake_silver:
+      name: AirLake-${bundle.target}-silver
+      catalog: workspace
+      schema: silver
+      serverless: true
+      development: true
+      libraries:
+        - file:
+            path: ../src/Pipelines/silver_tables/silver_airports.py
+        - file:
+            path: ../src/Pipelines/silver_tables/silver_bookings.py
+        - file:
+            path: ../src/Pipelines/silver_tables/silver_flights.py
+        - file:
+            path: ../src/Pipelines/silver_tables/silver_passengers.py
+        - file:
+            path: ../src/Pipelines/silver_views/silver_buisness_mat_view.py
