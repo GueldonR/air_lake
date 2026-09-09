@@ -18,4 +18,4 @@ resources:
         - file:
             path: ../src/Pipelines/silver_tables/silver_passengers.py
         - file:
-          path: ../src/Pipelines/silver_views/silver_business_mat_view.py
+            path: ../src/Pipelines/silver_views/silver_business_mat_view.py
