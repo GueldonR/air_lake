@@ -1,0 +1,22 @@
+resources:
+  jobs:
+    load_sample:
+      name: AirLake-${bundle.target}-load-sample
+      max_concurrent_runs: 1
+      parameters:
+        - name: dataset
+          default: initial
+        - name: raw_volume
+          default: "${var.raw_volume}"
+        - name: sample_path
+          default: "${workspace.file_path}/data/sample"
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "5"
+      tasks:
+        - task_key: load_sample
+          environment_key: Default
+          notebook_task:
+            notebook_path: ../src/notebooks/LoadSample.py
+            source: WORKSPACE
