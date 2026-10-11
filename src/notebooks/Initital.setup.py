@@ -23,6 +23,7 @@ raw_source_schema = dbutils.widgets.get("raw_source_schema")
 raw_source_volume = dbutils.widgets.get("raw_source_volume")
 raw_volume = dbutils.widgets.get("raw_volume").rstrip("/")
 
+spark.sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{raw_source_schema}")
 spark.sql(
     f"CREATE VOLUME IF NOT EXISTS {catalog}.{raw_source_schema}.{raw_source_volume}"
 )
