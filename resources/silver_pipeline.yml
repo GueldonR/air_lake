@@ -8,6 +8,7 @@ resources:
         airlake.bronze_volume: "${var.bronze_volume}"
       serverless: true
       development: true
+      allow_duplicate_names: true
       libraries:
         - file:
             path: ../src/Pipelines/silver_tables/silver_airports.py
