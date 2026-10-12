@@ -8,10 +8,9 @@ from pyspark.sql.functions import col, current_timestamp, to_date
 #### Staging
 @dp.table(name="staging_bookings")
 def stage_bookings():
-    bronze_volume = spark.conf.get(
-        "airlake.bronze_volume", "/Volumes/workspace/bronze/bronze_volume"
-    ).rstrip("/")
-    df = spark.readStream.format("delta").load(f"{bronze_volume}/bookings/data")
+    df = spark.readStream.table(
+        f"{spark.conf.get('airlake.catalog')}.{spark.conf.get('airlake.bronze_schema')}.bookings"
+    )
     return df
 
 
@@ -23,7 +22,7 @@ def transform_bookings():
         df.withColumn("amount", col("amount").cast("double"))
         .withColumn("modified_date", current_timestamp())
         .withColumn("booking_date", to_date(col("booking_date")))
-        .drop("_rescued_data")
+        .drop("_rescued_data", "_ingested_at", "_source_file")
     )
     return df
 
