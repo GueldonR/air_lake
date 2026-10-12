@@ -7,8 +7,22 @@ Databricks Asset Bundle for a medallion architecture data pipeline
 - Databricks workspace with Unity Catalog enabled.
 - Databricks CLI installed and authenticated.
 - Permission to create and write to the configured catalog, schemas, and volumes.
-- Sample files in `data/sample`.
+- Sample data unzipped into `data/sample` (see [Sample data](#sample-data)).
 - A Unix-style shell with `make` (Linux or macOS terminal; on Windows use Git Bash or WSL).
+
+## Sample data
+
+The sample data ships as `data/sample_.zip`. Unzip it before deploying, so the bundle
+uploads the CSVs to the workspace:
+
+```bash
+unzip data/sample_.zip -d data/                                  # Git Bash, Linux, macOS
+Expand-Archive data/sample_.zip -DestinationPath data/           # PowerShell
+```
+
+This creates `data/sample/<dataset>/<table>/` with the datasets `initial`, `incremental`,
+`scd` and `dirty`. The unzipped folder is not committed; only the zip is. The tables are
+described in [docs/source_schema.md](docs/source_schema.md).
 
 ## Configure
 
@@ -66,5 +80,6 @@ databricks.yml       Bundle variables and targets
 resources/           Jobs and pipeline definitions
 src/notebooks/       Setup, sample-load, and gold notebooks
 src/Pipelines/       Pipeline source: bronze ingestion, silver tables and views
-data/sample/<dataset>/<table>/   Sample CSVs (initial, incremental, scd), mirrors raw volume
+data/sample_.zip     Sample data; unzips to data/sample/<dataset>/<table>/ (mirrors raw volume)
+docs/                Source schema
 ```

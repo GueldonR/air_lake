@@ -213,3 +213,6 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+# Local data generator and the old sample data
+generator/
+legacy_sample/
