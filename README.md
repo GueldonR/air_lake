@@ -16,7 +16,7 @@ The sample data ships as `data/sample_.zip`. Unzip it before deploying, so the b
 uploads the CSVs to the workspace:
 
 ```bash
-unzip data/sample_.zip -d data/                                  # Git Bash, Linux, macOS
+uv run python -m zipfile -e data/sample_.zip data/              # any OS
 Expand-Archive data/sample_.zip -DestinationPath data/           # PowerShell
 ```
 

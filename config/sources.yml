@@ -1,0 +1,12 @@
+# Source tables: one raw folder and one bronze table each.
+# key and append_only are used by silver (AUTO CDC on key, or plain append for event tables).
+sources:
+  airlines:         { key: airline_id }
+  airports:         { key: airport_id }
+  aircraft:         { key: aircraft_id }
+  flight_schedules: { key: schedule_id }
+  flights:          { key: flight_id }
+  passengers:       { key: passenger_id }
+  bookings:         { key: booking_id }
+  booking_segments: { key: segment_id, append_only: true }
+  payments:         { key: payment_id, append_only: true }

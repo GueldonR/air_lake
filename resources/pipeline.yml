@@ -8,19 +8,20 @@ resources:
         airlake.catalog: "${var.catalog}"
         airlake.bronze_schema: "${var.bronze_schema}"
         airlake.raw_volume: "${var.raw_volume}"
+        airlake.sources_config: "${workspace.file_path}/config/sources.yml"
       serverless: true
       development: true
       allow_duplicate_names: true
       libraries:
         - file:
             path: ../src/Pipelines/bronze_tables/bronze_ingestion.py
-        - file:
-            path: ../src/Pipelines/silver_tables/silver_airports.py
-        - file:
-            path: ../src/Pipelines/silver_tables/silver_bookings.py
-        - file:
-            path: ../src/Pipelines/silver_tables/silver_flights.py
-        - file:
-            path: ../src/Pipelines/silver_tables/silver_passengers.py
-        - file:
-            path: ../src/Pipelines/silver_views/silver_business_mat_view.py
+        # - file:
+        #     path: ../src/Pipelines/silver_tables/silver_airports.py
+        # - file:
+        #     path: ../src/Pipelines/silver_tables/silver_bookings.py
+        # - file:
+        #     path: ../src/Pipelines/silver_tables/silver_flights.py
+        # - file:
+        #     path: ../src/Pipelines/silver_tables/silver_passengers.py
+        # - file:
+        #     path: ../src/Pipelines/silver_views/silver_business_mat_view.py
