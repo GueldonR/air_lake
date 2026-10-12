@@ -19,9 +19,13 @@ load:
 	databricks bundle run load_sample --params dataset=initial
 
 run:
-# Run bronze, silver, then gold
-	databricks bundle run ingestion
-	databricks bundle run airlake_silver
+# Run the pipeline (bronze + silver), then gold
+	databricks bundle run airlake_pipeline
+	databricks bundle run gold_dimensions
+
+full-refresh:
+# Rebuild every pipeline table from scratch, then gold
+	databricks bundle run airlake_pipeline --full-refresh-all
 	databricks bundle run gold_dimensions
 
 all: clean deploy setup load run

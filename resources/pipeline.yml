@@ -1,15 +1,19 @@
 resources:
   pipelines:
-    airlake_silver:
-      name: AirLake-${bundle.target}-silver-pipeline
+    airlake_pipeline:
+      name: AirLake-${bundle.target}-pipeline
       catalog: "${var.catalog}"
       schema: "${var.silver_schema}"
       configuration:
-        airlake.bronze_volume: "${var.bronze_volume}"
+        airlake.catalog: "${var.catalog}"
+        airlake.bronze_schema: "${var.bronze_schema}"
+        airlake.raw_volume: "${var.raw_volume}"
       serverless: true
       development: true
       allow_duplicate_names: true
       libraries:
+        - file:
+            path: ../src/Pipelines/bronze_tables/bronze_ingestion.py
         - file:
             path: ../src/Pipelines/silver_tables/silver_airports.py
         - file:

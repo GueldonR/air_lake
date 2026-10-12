@@ -11,11 +11,11 @@ passengers_rules = {
 @dp.temporary_view(name="transform_passengers")
 @dp.expect_all_or_drop(passengers_rules)
 def transform_passengers():
-    bronze_volume = spark.conf.get(
-        "airlake.bronze_volume", "/Volumes/workspace/bronze/bronze_volume"
-    ).rstrip("/")
-    df = spark.readStream.format("delta").load(f"{bronze_volume}/passenger/data")
-    df = df.drop("_rescued_data").withColumn("modified_date", current_timestamp())
+    df = spark.readStream.table(
+        f"{spark.conf.get('airlake.catalog')}.{spark.conf.get('airlake.bronze_schema')}.passenger"
+    )
+    df = df.drop("_rescued_data", "_ingested_at", "_source_file")
+    df = df.withColumn("modified_date", current_timestamp())
     return df
 
 

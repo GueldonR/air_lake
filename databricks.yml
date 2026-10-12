@@ -20,8 +20,6 @@ variables:
     default: raw_source_volume
   raw_volume:
     default: /Volumes/${var.catalog}/${var.raw_source_schema}/${var.raw_source_volume}/raw_data
-  bronze_volume:
-    default: /Volumes/${var.catalog}/${var.bronze_schema}/bronze_volume
 
 include:
   - resources/*.yml
