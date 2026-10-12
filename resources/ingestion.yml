@@ -14,7 +14,7 @@ resources:
         - task_key: Parameters
           environment_key: Default
           notebook_task:
-            notebook_path: ../src/notebooks/SrcParameters.py
+            notebook_path: ../src/notebooks/SrcParameters.ipynb
             source: WORKSPACE
 
         - task_key: Incremental_ingestion
@@ -27,7 +27,7 @@ resources:
               task_key: Incremental_ingestion_iteration
               environment_key: Default
               notebook_task:
-                notebook_path: ../src/notebooks/BronzeLayer.py
+                notebook_path: ../src/notebooks/BronzeLayer.ipynb
                 source: WORKSPACE
                 base_parameters:
                   src: "{{input.src}}"

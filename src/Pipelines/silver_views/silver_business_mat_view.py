@@ -1,7 +1,6 @@
 # Silver Business View
 ## Imports
 from pyspark import pipelines as dp
-from pyspark.sql.functions import *
 
 
 @dp.materialized_view(
