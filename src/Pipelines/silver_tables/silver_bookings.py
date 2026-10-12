@@ -1,7 +1,6 @@
 ## Imports
 from pyspark import pipelines as dp
-from pyspark.sql.functions import *
-from pyspark.sql.types import *
+from pyspark.sql.functions import col, current_timestamp, to_date
 
 ## DLT - Bookings
 
