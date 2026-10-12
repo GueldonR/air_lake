@@ -11,7 +11,7 @@ resources:
         - task_key: setup
           environment_key: Default
           notebook_task:
-            notebook_path: ../src/notebooks/Initital.setup.py
+            notebook_path: ../src/notebooks/initial_setup.ipynb
             source: WORKSPACE
             base_parameters:
               catalog: "${var.catalog}"

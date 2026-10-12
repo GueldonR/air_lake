@@ -18,5 +18,5 @@ resources:
         - task_key: load_sample
           environment_key: Default
           notebook_task:
-            notebook_path: ../src/notebooks/LoadSample.py
+            notebook_path: ../src/notebooks/LoadSample.ipynb
             source: WORKSPACE
