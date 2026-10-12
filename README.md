@@ -13,7 +13,7 @@ Databricks Asset Bundle for a medallion architecture data pipeline
 ## Configure
 
 Set workspace/catalog-specific values in `databricks.yml`. The bundle passes them to the
-setup, ingestion, silver, and gold resources.
+setup job, the pipeline, and the gold job.
 
 ## Deploy
 
@@ -29,9 +29,9 @@ Run the deployed resources in this order:
 1. `AirLake-dev-setup` creates schemas, volumes, and raw-data folders.
 2. `AirLake-dev-load-sample` copies sample CSVs (deployed with the bundle) into the raw
    folders. Parameter `dataset`: `initial` (default), `incremental` or `scd`.
-3. `AirLake-dev-ingestion-job` loads CSV files into bronze Delta data.
-4. `AirLake-dev-silver-pipeline` creates silver tables and the business view.
-5. `AirLake-dev-gold-dimensions` updates gold dimensions, then the fact table.
+3. `AirLake-dev-pipeline` ingests the raw CSVs into bronze tables with Auto Loader, then
+   builds the silver tables and the business view.
+4. `AirLake-dev-gold-dimensions` updates gold dimensions, then the fact table.
 
 The jobs use serverless compute. Databricks Free Edition may limit concurrent or
 active serverless runs; stop unused jobs and pipeline updates before retrying.
@@ -43,6 +43,7 @@ make all          # deploy, setup, load initial data, run bronze -> silver -> go
 make incremental  # load incremental files and rerun the pipeline
 make scd          # load SCD change files and rerun the pipeline
 make run          # rerun the pipeline only
+make full-refresh # rebuild all pipeline tables from scratch, then gold
 ```
 
 ## Data Flow
@@ -50,10 +51,10 @@ make run          # rerun the pipeline only
 ```mermaid
 flowchart LR
     CSV[data/sample CSV files] --> RAW[Raw volume]
-    RAW --> ING[Ingestion job]
-    ING --> BRONZE[Bronze Delta data]
-    BRONZE --> SILVER[Silver pipeline]
-    SILVER --> TABLES[Silver tables and business view]
+    subgraph PIPE[Pipeline]
+        BRONZE[Bronze tables - Auto Loader] --> TABLES[Silver tables and business view]
+    end
+    RAW --> BRONZE
     TABLES --> DIMS[Gold dimensions]
     DIMS --> FACT[Gold fact table]
 ```
@@ -63,7 +64,7 @@ flowchart LR
 ```text
 databricks.yml       Bundle variables and targets
 resources/           Jobs and pipeline definitions
-src/notebooks/       Setup, ingestion, and gold notebooks
-src/Pipelines/       Silver tables and views
+src/notebooks/       Setup, sample-load, and gold notebooks
+src/Pipelines/       Pipeline source: bronze ingestion, silver tables and views
 data/sample/<dataset>/<table>/   Sample CSVs (initial, incremental, scd), mirrors raw volume
 ```
