@@ -60,7 +60,30 @@ sources:
         created_at_valid: "created_at IS NOT NULL"
         updated_at_valid: "updated_at IS NOT NULL"
 
-  flight_schedules: { key: schedule_id }
+  flight_schedules:
+    key: schedule_id
+    silver:
+      scd_type: 1  # valid_from / valid_to already carry the history
+      cleanups:
+        flight_number: "upper(trim(flight_number))"
+      casts:
+        duration_minutes: INT
+        valid_from: DATE
+        valid_to: DATE
+        created_at: TIMESTAMP
+        updated_at: TIMESTAMP
+      rules:
+        schedule_id_not_null: "schedule_id IS NOT NULL"
+        airline_id_not_null: "airline_id IS NOT NULL"
+        flight_number_format: "flight_number RLIKE '^[A-Z0-9]{2}[0-9]{1,4}$'"
+        origin_not_destination: "origin_airport_id <> destination_airport_id"
+        departure_time_format: "departure_time RLIKE '^([01][0-9]|2[0-3]):[0-5][0-9]$'"
+        duration_positive: "duration_minutes > 0"
+        days_of_week_format: "days_of_week RLIKE '^[1-7]{1,7}$'"
+        valid_range: "valid_from <= valid_to"
+        created_at_valid: "created_at IS NOT NULL"
+        updated_at_valid: "updated_at IS NOT NULL"
+
   flights:          { key: flight_id }
   passengers:       { key: passenger_id }
   bookings:         { key: booking_id }
