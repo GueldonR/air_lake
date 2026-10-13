@@ -1,9 +1,65 @@
 # Source tables: one raw folder and one bronze table each.
-# key and append_only are used by silver (AUTO CDC on key, or plain append for event tables).
+# Bronze reads only the source names. Silver reads key, append_only and the silver block:
+#   scd_type: 1 keeps the current version per key, 2 keeps every version (__START_AT/__END_AT)
+#   cleanups: SQL expressions applied first, per column
+#   casts:    column -> SQL type, applied with try_cast (bad values become NULL and fail a rule)
+#   rules:    rule name -> SQL condition; rows breaking any rule go to <table>_quarantine
+# SCD2 where history answers operational questions (flights, bookings, aircraft);
+# SCD1 for static reference data, effective-dated sources, and personal data (no question needs its history).
 sources:
-  airlines:         { key: airline_id }
-  airports:         { key: airport_id }
-  aircraft:         { key: aircraft_id }
+  airlines:
+    key: airline_id
+    silver:
+      scd_type: 1  # changes rarely; no question needs the history
+      cleanups:
+        iata_code: "upper(trim(iata_code))"
+      casts:
+        created_at: TIMESTAMP
+        updated_at: TIMESTAMP
+      rules:
+        airline_id_not_null: "airline_id IS NOT NULL"
+        iata_code_format: "iata_code RLIKE '^[A-Z0-9]{2}$'"
+        airline_name_not_null: "airline_name IS NOT NULL"
+        created_at_valid: "created_at IS NOT NULL"
+        updated_at_valid: "updated_at IS NOT NULL"
+
+  airports:
+    key: airport_id
+    silver:
+      scd_type: 1  # static reference data
+      cleanups:
+        iata_code: "upper(trim(iata_code))"
+      casts:
+        latitude: DECIMAL(9,6)
+        longitude: DECIMAL(9,6)
+        created_at: TIMESTAMP
+        updated_at: TIMESTAMP
+      rules:
+        airport_id_not_null: "airport_id IS NOT NULL"
+        iata_code_format: "iata_code RLIKE '^[A-Z]{3}$'"
+        latitude_range: "latitude BETWEEN -90 AND 90"
+        longitude_range: "longitude BETWEEN -180 AND 180"
+        created_at_valid: "created_at IS NOT NULL"
+        updated_at_valid: "updated_at IS NOT NULL"
+
+  aircraft:
+    key: aircraft_id
+    silver:
+      scd_type: 2  # status history: which aircraft were available on a given day
+      cleanups:
+        status: "lower(trim(status))"
+      casts:
+        seat_capacity: INT
+        created_at: TIMESTAMP
+        updated_at: TIMESTAMP
+      rules:
+        aircraft_id_not_null: "aircraft_id IS NOT NULL"
+        airline_id_not_null: "airline_id IS NOT NULL"
+        seat_capacity_positive: "seat_capacity > 0"
+        status_valid: "status IN ('active', 'maintenance')"
+        created_at_valid: "created_at IS NOT NULL"
+        updated_at_valid: "updated_at IS NOT NULL"
+
   flight_schedules: { key: schedule_id }
   flights:          { key: flight_id }
   passengers:       { key: passenger_id }
