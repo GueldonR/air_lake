@@ -1,65 +1,17 @@
-# AirLake
+# Air Lake
 
-Databricks Asset Bundle for a medallion architecture data pipeline
+An airline lakehouse on Databricks: bronze → silver → gold in one declarative pipeline.
 
-## Requirements
+- **Bronze:** Auto Loader ingests raw CSV files incrementally.
+- **Silver:** config-driven cleaning and validation (`config/sources.yml`). AUTO CDC keeps SCD1 or
+  SCD2 history, and rows that break a rule go to a `<table>_quarantine` table.
+- **Gold:** a Kimball star schema as materialized views, with transaction, accumulating snapshot,
+  periodic snapshot, factless and aggregate fact tables.
+- **Data quality:** pipeline expectations count rows that break a rule or miss a dimension.
 
-- Databricks workspace with Unity Catalog enabled.
-- Databricks CLI installed and authenticated.
-- Permission to create and write to the configured catalog, schemas, and volumes.
-- Sample data unzipped into `data/sample` (see [Sample data](#sample-data)).
-- A Unix-style shell with `make` (Linux or macOS terminal; on Windows use Git Bash or WSL).
+The sample data is generated and shaped like an airline's operational system.
 
-## Sample data
-
-The sample data ships as `data/sample_.zip`. Unzip it before deploying, so the bundle
-uploads the CSVs to the workspace:
-
-```bash
-uv run python -m zipfile -e data/sample_.zip data/              # any OS
-Expand-Archive data/sample_.zip -DestinationPath data/           # PowerShell
-```
-
-This creates `data/sample/<dataset>/<table>/` with the datasets `initial`, `incremental`,
-`scd` and `dirty`. The unzipped folder is not committed; only the zip is. The tables are
-described in [docs/source_schema.md](docs/source_schema.md).
-
-## Configure
-
-Set workspace/catalog-specific values in `databricks.yml`. The bundle passes them to the
-setup job and the pipeline.
-
-## Deploy
-
-From the project root:
-
-```powershell
-databricks bundle validate -t dev
-databricks bundle deploy -t dev
-```
-
-Run the deployed resources in this order:
-
-1. `AirLake-dev-setup` creates schemas, volumes, and raw-data folders.
-2. `AirLake-dev-load-sample` copies sample CSVs (deployed with the bundle) into the raw
-   folders. Parameter `dataset`: `initial` (default), `incremental` or `scd`.
-3. `AirLake-dev-pipeline` ingests the raw CSVs into bronze tables with Auto Loader, builds
-   the silver tables, then the gold star schema as materialized views.
-
-The jobs use serverless compute. Databricks Free Edition may limit concurrent or
-active serverless runs; stop unused jobs and pipeline updates before retrying.
-
-## Quick start with make
-
-```text
-make all          # deploy, setup, load initial data, run bronze -> silver -> gold
-make incremental  # load incremental files and rerun the pipeline
-make scd          # load SCD change files and rerun the pipeline
-make run          # rerun the pipeline only
-make full-refresh # rebuild all pipeline tables from scratch
-```
-
-## Data Flow
+## Architecture
 
 ```mermaid
 flowchart LR
@@ -72,13 +24,59 @@ flowchart LR
     RAW --> BRONZE
 ```
 
-## Layout
+## Data model
+
+- Source tables: [docs/source_schema.md](docs/source_schema.md)
+- Gold star schema: [docs/gold_schema.md](docs/gold_schema.md)
+
+## Quick start
+
+You need a Databricks workspace with Unity Catalog, the Databricks CLI (authenticated), and `make`
+(on Windows use Git Bash or WSL).
+
+```bash
+uv run python -m zipfile -e data/sample_.zip data/   # unzip the sample data (PowerShell: Expand-Archive)
+make all           # deploy, set up, load the initial data, run bronze -> silver -> gold
+make incremental   # load the next batch and rerun the pipeline
+make scd           # load SCD changes and rerun the pipeline
+```
+
+`make run` reruns the pipeline only, and `make full-refresh` rebuilds every table from scratch.
+
+<details>
+<summary>Step by step without make</summary>
+
+Set the catalog and schema names in `databricks.yml`, then from the project root:
+
+```bash
+databricks bundle validate -t dev
+databricks bundle deploy -t dev
+```
+
+Run the deployed resources in this order:
+
+1. `AirLake-dev-setup` creates the schemas and the raw volume.
+2. `AirLake-dev-load-sample` copies the sample CSVs into the raw volume. Parameter `dataset`:
+   `initial` (default), `incremental` or `scd`.
+3. `AirLake-dev-pipeline` builds bronze, silver and gold.
+
+Everything runs on serverless compute. Databricks Free Edition limits concurrent serverless runs,
+so stop unused jobs and pipeline updates before retrying.
+
+</details>
+
+## Project layout
 
 ```text
+config/sources.yml   Source tables, keys and silver rules
 databricks.yml       Bundle variables and targets
 resources/           Jobs and pipeline definitions
+src/Pipelines/       Pipeline source: bronze, silver, gold
 src/notebooks/       Setup and sample-load notebooks
-src/Pipelines/       Pipeline source: bronze ingestion, silver tables, gold star schema
-data/sample_.zip     Sample data; unzips to data/sample/<dataset>/<table>/ (mirrors raw volume)
-docs/                Source schema
+data/sample_.zip     Sample data; unzips to data/sample/<dataset>/<table>/
+docs/                Source and gold schema
 ```
+
+## License
+
+[MIT](LICENSE)
