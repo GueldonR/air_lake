@@ -115,7 +115,7 @@ sources:
   passengers:
     key: passenger_id
     silver:
-      scd_type: 1  # personal data; no question needs its history
+      scd_type: 1  # personal data: Minimization and no question needs the history. 
       cleanups:
         email: "lower(trim(email))"
       casts:
@@ -131,6 +131,31 @@ sources:
         created_at_valid: "created_at IS NOT NULL"
         updated_at_valid: "updated_at IS NOT NULL"
 
-  bookings:         { key: booking_id }
+  bookings:
+    key: booking_id
+    silver:
+      scd_type: 2  # status and amount history
+      cleanups:
+        booking_reference: "upper(trim(booking_reference))"
+        channel: "lower(trim(channel))"
+        currency: "upper(trim(currency))"
+        status: "lower(trim(status))"
+      casts:
+        booked_at: TIMESTAMP
+        total_amount: DECIMAL(10,2)
+        created_at: TIMESTAMP
+        updated_at: TIMESTAMP
+      rules:
+        booking_id_not_null: "booking_id IS NOT NULL"
+        booking_reference_format: "booking_reference RLIKE '^[A-Z0-9]{6}$'"
+        passenger_id_not_null: "passenger_id IS NOT NULL"
+        booked_at_valid: "booked_at <= created_at"
+        channel_valid: "channel IN ('web', 'app', 'agent')"
+        currency_format: "currency RLIKE '^[A-Z]{3}$'"
+        total_amount_positive: "total_amount > 0"
+        status_valid: "status IN ('confirmed', 'cancelled', 'completed')"
+        created_at_valid: "created_at IS NOT NULL"
+        updated_at_valid: "updated_at IS NOT NULL"
+
   booking_segments: { key: segment_id, append_only: true }
   payments:         { key: payment_id, append_only: true }
