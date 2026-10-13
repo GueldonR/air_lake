@@ -7,6 +7,7 @@ resources:
       configuration:
         airlake.catalog: "${var.catalog}"
         airlake.bronze_schema: "${var.bronze_schema}"
+        airlake.gold_schema: "${var.gold_schema}"
         airlake.raw_volume: "${var.raw_volume}"
         airlake.sources_config: "${workspace.file_path}/config/sources.yml"
       serverless: true
@@ -16,3 +17,7 @@ resources:
             path: ../src/Pipelines/bronze_tables/bronze_ingestion.py
         - file:
             path: ../src/Pipelines/silver_tables/silver_entities.py
+        - file:
+            path: ../src/Pipelines/gold_tables/dims.py
+        - file:
+            path: ../src/Pipelines/gold_tables/facts.py
