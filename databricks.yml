@@ -24,6 +24,11 @@ variables:
 include:
   - resources/*.yml
 
+# data/sample/ is gitignored (only the zip is committed), but load_sample needs it in the workspace
+sync:
+  include:
+    - data/sample/**
+
 targets:
   dev:
     mode: development

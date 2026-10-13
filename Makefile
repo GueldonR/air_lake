@@ -19,14 +19,12 @@ load:
 	databricks bundle run load_sample --params dataset=initial
 
 run:
-# Run the pipeline (bronze + silver), then gold
+# Run the pipeline (bronze -> silver -> gold)
 	databricks bundle run airlake_pipeline
-	databricks bundle run gold_dimensions
 
 full-refresh:
-# Rebuild every pipeline table from scratch, then gold
+# Rebuild every pipeline table from scratch
 	databricks bundle run airlake_pipeline --full-refresh-all
-	databricks bundle run gold_dimensions
 
 all: clean deploy setup load run
 # First-time run: everything in order
@@ -44,3 +42,8 @@ scd:
 destroy:
 # Remove deployed jobs, pipelines and files (keeps schemas and data)
 	databricks bundle destroy --auto-approve
+
+
+update-pipe:
+	$(MAKE) deploy
+	databricks bundle run airlake_pipeline --full-refresh-all

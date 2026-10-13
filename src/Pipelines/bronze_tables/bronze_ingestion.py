@@ -1,4 +1,5 @@
 ## Imports
+import yaml
 from pyspark import pipelines as dp
 from pyspark.sql.functions import col, current_timestamp
 
@@ -8,8 +9,9 @@ catalog = spark.conf.get("airlake.catalog")
 bronze_schema = spark.conf.get("airlake.bronze_schema")
 raw_volume = spark.conf.get("airlake.raw_volume").rstrip("/")
 
-# One bronze table per raw folder
-sources = ["airports", "bookings", "flights", "passenger"]
+# Source tables are defined in config/sources.yml, one raw folder and one bronze table each
+with open(spark.conf.get("airlake.sources_config")) as f:
+    SOURCES = yaml.safe_load(f)["sources"]
 
 
 def create_bronze_table(source):
@@ -29,5 +31,5 @@ def create_bronze_table(source):
         )
 
 
-for source in sources:
+for source in SOURCES:
     create_bronze_table(source)
