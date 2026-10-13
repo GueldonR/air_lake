@@ -84,7 +84,34 @@ sources:
         created_at_valid: "created_at IS NOT NULL"
         updated_at_valid: "updated_at IS NOT NULL"
 
-  flights:          { key: flight_id }
+  flights:
+    key: flight_id
+    silver:
+      scd_type: 2  # delay and status history
+      cleanups:
+        flight_number: "upper(trim(flight_number))"
+        status: "lower(trim(status))"
+      casts:
+        flight_date: DATE
+        scheduled_departure: TIMESTAMP
+        scheduled_arrival: TIMESTAMP
+        estimated_departure: TIMESTAMP
+        actual_departure: TIMESTAMP
+        actual_arrival: TIMESTAMP
+        created_at: TIMESTAMP
+        updated_at: TIMESTAMP
+      rules:
+        flight_id_not_null: "flight_id IS NOT NULL"
+        schedule_id_not_null: "schedule_id IS NOT NULL"
+        aircraft_id_not_null: "aircraft_id IS NOT NULL"
+        flight_number_format: "flight_number RLIKE '^[A-Z0-9]{2}[0-9]{1,4}$'"
+        flight_date_valid: "flight_date IS NOT NULL"
+        status_valid: "status IN ('scheduled', 'delayed', 'departed', 'arrived', 'cancelled')"
+        scheduled_order: "scheduled_arrival > scheduled_departure"
+        actual_order: "actual_arrival IS NULL OR actual_arrival > actual_departure"
+        created_at_valid: "created_at IS NOT NULL"
+        updated_at_valid: "updated_at IS NOT NULL"
+
   passengers:       { key: passenger_id }
   bookings:         { key: booking_id }
   booking_segments: { key: segment_id, append_only: true }
