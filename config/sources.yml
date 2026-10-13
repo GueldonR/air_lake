@@ -157,5 +157,43 @@ sources:
         created_at_valid: "created_at IS NOT NULL"
         updated_at_valid: "updated_at IS NOT NULL"
 
-  booking_segments: { key: segment_id, append_only: true }
-  payments:         { key: payment_id, append_only: true }
+  booking_segments:
+    key: segment_id
+    append_only: true
+    silver:
+      cleanups:
+        cabin_class: "lower(trim(cabin_class))"
+      casts:
+        segment_no: INT
+        fare_amount: DECIMAL(10,2)
+        created_at: TIMESTAMP
+      rules:
+        segment_id_not_null: "segment_id IS NOT NULL"
+        booking_id_not_null: "booking_id IS NOT NULL"
+        flight_id_not_null: "flight_id IS NOT NULL"
+        segment_no_positive: "segment_no >= 1"
+        cabin_class_valid: "cabin_class IN ('economy', 'premium_economy', 'business')"
+        fare_amount_positive: "fare_amount > 0"
+        created_at_valid: "created_at IS NOT NULL"
+
+  payments:
+    key: payment_id
+    append_only: true
+    silver:
+      cleanups:
+        payment_type: "lower(trim(payment_type))"
+        method: "lower(trim(method))"
+        currency: "upper(trim(currency))"
+        status: "lower(trim(status))"
+      casts:
+        amount: DECIMAL(10,2)
+        created_at: TIMESTAMP
+      rules:
+        payment_id_not_null: "payment_id IS NOT NULL"
+        booking_id_not_null: "booking_id IS NOT NULL"
+        payment_type_valid: "payment_type IN ('charge', 'refund')"
+        method_valid: "method IN ('card', 'paypal', 'klarna', 'invoice')"
+        amount_positive: "amount > 0"  # refunds are positive too; payment_type gives the direction
+        currency_format: "currency RLIKE '^[A-Z]{3}$'"
+        status_valid: "status IN ('captured', 'failed', 'refunded')"
+        created_at_valid: "created_at IS NOT NULL"
