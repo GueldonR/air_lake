@@ -27,7 +27,7 @@ described in [docs/source_schema.md](docs/source_schema.md).
 ## Configure
 
 Set workspace/catalog-specific values in `databricks.yml`. The bundle passes them to the
-setup job, the pipeline, and the gold job.
+setup job and the pipeline.
 
 ## Deploy
 
@@ -43,9 +43,8 @@ Run the deployed resources in this order:
 1. `AirLake-dev-setup` creates schemas, volumes, and raw-data folders.
 2. `AirLake-dev-load-sample` copies sample CSVs (deployed with the bundle) into the raw
    folders. Parameter `dataset`: `initial` (default), `incremental` or `scd`.
-3. `AirLake-dev-pipeline` ingests the raw CSVs into bronze tables with Auto Loader, then
-   builds the silver tables and the business view.
-4. `AirLake-dev-gold-dimensions` updates gold dimensions, then the fact table.
+3. `AirLake-dev-pipeline` ingests the raw CSVs into bronze tables with Auto Loader, builds
+   the silver tables, then the gold star schema as materialized views.
 
 The jobs use serverless compute. Databricks Free Edition may limit concurrent or
 active serverless runs; stop unused jobs and pipeline updates before retrying.
@@ -57,7 +56,7 @@ make all          # deploy, setup, load initial data, run bronze -> silver -> go
 make incremental  # load incremental files and rerun the pipeline
 make scd          # load SCD change files and rerun the pipeline
 make run          # rerun the pipeline only
-make full-refresh # rebuild all pipeline tables from scratch, then gold
+make full-refresh # rebuild all pipeline tables from scratch
 ```
 
 ## Data Flow
@@ -66,11 +65,11 @@ make full-refresh # rebuild all pipeline tables from scratch, then gold
 flowchart LR
     CSV[data/sample CSV files] --> RAW[Raw volume]
     subgraph PIPE[Pipeline]
-        BRONZE[Bronze tables - Auto Loader] --> TABLES[Silver tables and business view]
+        BRONZE[Bronze tables - Auto Loader] --> SILVER[Silver tables]
+        SILVER --> DIMS[Gold dimensions]
+        DIMS --> FACTS[Gold facts]
     end
     RAW --> BRONZE
-    TABLES --> DIMS[Gold dimensions]
-    DIMS --> FACT[Gold fact table]
 ```
 
 ## Layout
@@ -78,8 +77,8 @@ flowchart LR
 ```text
 databricks.yml       Bundle variables and targets
 resources/           Jobs and pipeline definitions
-src/notebooks/       Setup, sample-load, and gold notebooks
-src/Pipelines/       Pipeline source: bronze ingestion, silver tables and views
+src/notebooks/       Setup and sample-load notebooks
+src/Pipelines/       Pipeline source: bronze ingestion, silver tables, gold star schema
 data/sample_.zip     Sample data; unzips to data/sample/<dataset>/<table>/ (mirrors raw volume)
 docs/                Source schema
 ```
