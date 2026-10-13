@@ -112,7 +112,25 @@ sources:
         created_at_valid: "created_at IS NOT NULL"
         updated_at_valid: "updated_at IS NOT NULL"
 
-  passengers:       { key: passenger_id }
+  passengers:
+    key: passenger_id
+    silver:
+      scd_type: 1  # personal data; no question needs its history
+      cleanups:
+        email: "lower(trim(email))"
+      casts:
+        date_of_birth: DATE
+        created_at: TIMESTAMP
+        updated_at: TIMESTAMP
+      rules:
+        passenger_id_not_null: "passenger_id IS NOT NULL"
+        first_name_not_null: "first_name IS NOT NULL"
+        last_name_not_null: "last_name IS NOT NULL"
+        email_format: "email RLIKE '^[^@ ]+@[^@ ]+[.][^@ ]+$'"
+        date_of_birth_valid: "date_of_birth < to_date(created_at)"
+        created_at_valid: "created_at IS NOT NULL"
+        updated_at_valid: "updated_at IS NOT NULL"
+
   bookings:         { key: booking_id }
   booking_segments: { key: segment_id, append_only: true }
   payments:         { key: payment_id, append_only: true }
