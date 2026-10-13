@@ -216,3 +216,5 @@ cython_debug/
 # Local data generator and the old sample data
 generator/
 legacy_sample/
+# Unzipped sample data (only data/sample_.zip is committed)
+data/sample/
