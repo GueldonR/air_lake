@@ -1,0 +1,199 @@
+# Source tables: one raw folder and one bronze table each.
+# Bronze reads only the source names. Silver reads key, append_only and the silver block:
+#   scd_type: 1 keeps the current version per key, 2 keeps every version (__START_AT/__END_AT)
+#   cleanups: SQL expressions applied first, per column
+#   casts:    column -> SQL type, applied with try_cast (bad values become NULL and fail a rule)
+#   rules:    rule name -> SQL condition; rows breaking any rule go to <table>_quarantine
+# SCD2 where history answers operational questions (flights, bookings, aircraft);
+# SCD1 for static reference data, effective-dated sources, and personal data (no question needs its history).
+sources:
+  airlines:
+    key: airline_id
+    silver:
+      scd_type: 1  # changes rarely; no question needs the history
+      cleanups:
+        iata_code: "upper(trim(iata_code))"
+      casts:
+        created_at: TIMESTAMP
+        updated_at: TIMESTAMP
+      rules:
+        airline_id_not_null: "airline_id IS NOT NULL"
+        iata_code_format: "iata_code RLIKE '^[A-Z0-9]{2}$'"
+        airline_name_not_null: "airline_name IS NOT NULL"
+        created_at_valid: "created_at IS NOT NULL"
+        updated_at_valid: "updated_at IS NOT NULL"
+
+  airports:
+    key: airport_id
+    silver:
+      scd_type: 1  # static reference data
+      cleanups:
+        iata_code: "upper(trim(iata_code))"
+      casts:
+        latitude: DECIMAL(9,6)
+        longitude: DECIMAL(9,6)
+        created_at: TIMESTAMP
+        updated_at: TIMESTAMP
+      rules:
+        airport_id_not_null: "airport_id IS NOT NULL"
+        iata_code_format: "iata_code RLIKE '^[A-Z]{3}$'"
+        latitude_range: "latitude BETWEEN -90 AND 90"
+        longitude_range: "longitude BETWEEN -180 AND 180"
+        created_at_valid: "created_at IS NOT NULL"
+        updated_at_valid: "updated_at IS NOT NULL"
+
+  aircraft:
+    key: aircraft_id
+    silver:
+      scd_type: 2  # status history: which aircraft were available on a given day
+      cleanups:
+        status: "lower(trim(status))"
+      casts:
+        seat_capacity: INT
+        created_at: TIMESTAMP
+        updated_at: TIMESTAMP
+      rules:
+        aircraft_id_not_null: "aircraft_id IS NOT NULL"
+        airline_id_not_null: "airline_id IS NOT NULL"
+        seat_capacity_positive: "seat_capacity > 0"
+        status_valid: "status IN ('active', 'maintenance')"
+        created_at_valid: "created_at IS NOT NULL"
+        updated_at_valid: "updated_at IS NOT NULL"
+
+  flight_schedules:
+    key: schedule_id
+    silver:
+      scd_type: 1  # valid_from / valid_to already carry the history
+      cleanups:
+        flight_number: "upper(trim(flight_number))"
+      casts:
+        duration_minutes: INT
+        valid_from: DATE
+        valid_to: DATE
+        created_at: TIMESTAMP
+        updated_at: TIMESTAMP
+      rules:
+        schedule_id_not_null: "schedule_id IS NOT NULL"
+        airline_id_not_null: "airline_id IS NOT NULL"
+        flight_number_format: "flight_number RLIKE '^[A-Z0-9]{2}[0-9]{1,4}$'"
+        origin_not_destination: "origin_airport_id <> destination_airport_id"
+        departure_time_format: "departure_time RLIKE '^([01][0-9]|2[0-3]):[0-5][0-9]$'"
+        duration_positive: "duration_minutes > 0"
+        days_of_week_format: "days_of_week RLIKE '^[1-7]{1,7}$'"
+        valid_range: "valid_from <= valid_to"
+        created_at_valid: "created_at IS NOT NULL"
+        updated_at_valid: "updated_at IS NOT NULL"
+
+  flights:
+    key: flight_id
+    silver:
+      scd_type: 2  # delay and status history
+      cleanups:
+        flight_number: "upper(trim(flight_number))"
+        status: "lower(trim(status))"
+      casts:
+        flight_date: DATE
+        scheduled_departure: TIMESTAMP
+        scheduled_arrival: TIMESTAMP
+        estimated_departure: TIMESTAMP
+        actual_departure: TIMESTAMP
+        actual_arrival: TIMESTAMP
+        created_at: TIMESTAMP
+        updated_at: TIMESTAMP
+      rules:
+        flight_id_not_null: "flight_id IS NOT NULL"
+        schedule_id_not_null: "schedule_id IS NOT NULL"
+        aircraft_id_not_null: "aircraft_id IS NOT NULL"
+        flight_number_format: "flight_number RLIKE '^[A-Z0-9]{2}[0-9]{1,4}$'"
+        flight_date_valid: "flight_date IS NOT NULL"
+        status_valid: "status IN ('scheduled', 'delayed', 'departed', 'arrived', 'cancelled')"
+        scheduled_order: "scheduled_arrival > scheduled_departure"
+        actual_order: "actual_arrival IS NULL OR actual_arrival > actual_departure"
+        created_at_valid: "created_at IS NOT NULL"
+        updated_at_valid: "updated_at IS NOT NULL"
+
+  passengers:
+    key: passenger_id
+    silver:
+      scd_type: 1  # personal data: Minimization and no question needs the history. 
+      cleanups:
+        email: "lower(trim(email))"
+      casts:
+        date_of_birth: DATE
+        created_at: TIMESTAMP
+        updated_at: TIMESTAMP
+      rules:
+        passenger_id_not_null: "passenger_id IS NOT NULL"
+        first_name_not_null: "first_name IS NOT NULL"
+        last_name_not_null: "last_name IS NOT NULL"
+        email_format: "email RLIKE '^[^@ ]+@[^@ ]+[.][^@ ]+$'"
+        date_of_birth_valid: "date_of_birth < to_date(created_at)"
+        created_at_valid: "created_at IS NOT NULL"
+        updated_at_valid: "updated_at IS NOT NULL"
+
+  bookings:
+    key: booking_id
+    silver:
+      scd_type: 2  # status and amount history
+      cleanups:
+        booking_reference: "upper(trim(booking_reference))"
+        channel: "lower(trim(channel))"
+        currency: "upper(trim(currency))"
+        status: "lower(trim(status))"
+      casts:
+        booked_at: TIMESTAMP
+        total_amount: DECIMAL(10,2)
+        created_at: TIMESTAMP
+        updated_at: TIMESTAMP
+      rules:
+        booking_id_not_null: "booking_id IS NOT NULL"
+        booking_reference_format: "booking_reference RLIKE '^[A-Z0-9]{6}$'"
+        passenger_id_not_null: "passenger_id IS NOT NULL"
+        booked_at_valid: "booked_at <= created_at"
+        channel_valid: "channel IN ('web', 'app', 'agent')"
+        currency_format: "currency RLIKE '^[A-Z]{3}$'"
+        total_amount_positive: "total_amount > 0"
+        status_valid: "status IN ('confirmed', 'cancelled', 'completed')"
+        created_at_valid: "created_at IS NOT NULL"
+        updated_at_valid: "updated_at IS NOT NULL"
+
+  booking_segments:
+    key: segment_id
+    append_only: true
+    silver:
+      cleanups:
+        cabin_class: "lower(trim(cabin_class))"
+      casts:
+        segment_no: INT
+        fare_amount: DECIMAL(10,2)
+        created_at: TIMESTAMP
+      rules:
+        segment_id_not_null: "segment_id IS NOT NULL"
+        booking_id_not_null: "booking_id IS NOT NULL"
+        flight_id_not_null: "flight_id IS NOT NULL"
+        segment_no_positive: "segment_no >= 1"
+        cabin_class_valid: "cabin_class IN ('economy', 'premium_economy', 'business')"
+        fare_amount_positive: "fare_amount > 0"
+        created_at_valid: "created_at IS NOT NULL"
+
+  payments:
+    key: payment_id
+    append_only: true
+    silver:
+      cleanups:
+        payment_type: "lower(trim(payment_type))"
+        method: "lower(trim(method))"
+        currency: "upper(trim(currency))"
+        status: "lower(trim(status))"
+      casts:
+        amount: DECIMAL(10,2)
+        created_at: TIMESTAMP
+      rules:
+        payment_id_not_null: "payment_id IS NOT NULL"
+        booking_id_not_null: "booking_id IS NOT NULL"
+        payment_type_valid: "payment_type IN ('charge', 'refund')"
+        method_valid: "method IN ('card', 'paypal', 'klarna', 'invoice')"
+        amount_positive: "amount > 0"  # refunds are positive too; payment_type gives the direction
+        currency_format: "currency RLIKE '^[A-Z]{3}$'"
+        status_valid: "status IN ('captured', 'failed', 'refunded')"
+        created_at_valid: "created_at IS NOT NULL"
