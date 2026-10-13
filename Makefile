@@ -44,3 +44,8 @@ scd:
 destroy:
 # Remove deployed jobs, pipelines and files (keeps schemas and data)
 	databricks bundle destroy --auto-approve
+
+
+update-pipe:
+	$(MAKE) deploy
+	databricks bundle run airlake_pipeline --full-refresh-all
