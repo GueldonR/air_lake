@@ -1,3 +1,5 @@
+.PHONY: clean deploy setup load run full-refresh all incremental scd destroy update-pipe
+
 clean: ## Remove the local bundle cache so deploy re-uploads every file
 ifeq ($(OS),Windows_NT)
 	powershell -NoProfile -Command "Remove-Item -Recurse -Force -ErrorAction SilentlyContinue .databricks"
@@ -21,7 +23,11 @@ full-refresh: ## Rebuild every pipeline table from scratch
 	databricks bundle run airlake_pipeline --full-refresh-all
 
 all: ## First-time run: everything in order
-	clean deploy setup load run
+	$(MAKE) clean
+	$(MAKE) deploy
+	$(MAKE) setup
+	$(MAKE) load
+	$(MAKE) run
 
 incremental: ## Load incremental files, then rerun the pipeline
 	databricks bundle run load_sample --params dataset=incremental
